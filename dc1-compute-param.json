@@ -29,13 +29,13 @@
       },
       "NicStaticIps": {
         "value": [
-          "172.31.0.4",
+          "10.0.0.5",
           "NA"
         ]
       },
       "VmSubnetResourceIds": {
         "value": [
-          "/subscriptions/c92d46bf-157d-4970-ab75-0c112a7f44ac/resourceGroups/rg-network-prod-001/providers/Microsoft.Network/virtualNetworks/vnet-prod-neu-001/subnets/snet-prod-neu-001",
+          "/subscriptions/fbc85ad0-3572-44ba-a123-f53745283673/resourceGroups/TestRG/providers/Microsoft.Network/virtualNetworks/vnet-prod-001/subnets/snet-prod-001",
           "NA"
         ]
       },
@@ -104,7 +104,7 @@
         "value": "PLACEHOLDER_REG_KEY"
       },
       "domainToJoin": {
-        "value": "mardix.local"
+        "value": "Home.local"
       },
       "domainUsername": {
         "value": "domainjoin"
