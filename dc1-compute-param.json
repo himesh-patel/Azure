@@ -89,7 +89,7 @@
         "value": true
       },
       "BootDiagnosticsUri": {
-        "value": "https://amdiagnosticsneub7ea9323.blob.core.windows.net/"
+        "value": "https://testrgdiag986.blob.core.windows.net/"
       },
       "ApplyDscConfig": {
         "value": "No"
