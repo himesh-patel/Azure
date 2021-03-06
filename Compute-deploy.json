@@ -1,0 +1,543 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.5.0",
+    "parameters": {
+        "Application": {
+            "type": "string"
+        },
+        "Environment": {
+            "type": "string",
+            "allowedValues": [
+                "prod",
+                "shared",
+                "qa",
+                "test",
+                "dev"
+            ]
+        },
+        "Region": {
+            "type": "string"
+        },
+        "VmIndex": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 999
+        },
+        "VmHybridUseBenefit": {
+            "type": "string",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ]
+        },
+        "NicCount": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 2
+        },
+        "NicAcceleratedNetwork": {
+            "type": "bool"
+        },
+        "NicIpForward": {
+            "type": "bool"
+        },
+        "NicStaticIps": {
+            "type": "array"
+        },
+        "VmSubnetResourceIds": {
+            "type": "array"
+        },
+        "DeployAvailabilitySet": {
+            "type": "string",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ]
+        },
+        "VmSize": {
+            "type": "string"
+        },
+        "OsDiskStorageType": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_LRS",
+                "StandardSSD_LRS",
+                "Premium_LRS"
+            ]
+        },
+        "OsDiskSize": {
+            "type": "int",
+            "allowedvalues": [
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024
+            ]
+        },
+        "AdminUserName": {
+            "type": "string"
+        },
+        "DeployVmImageType": {
+            "type": "string",
+            "allowedValues": [
+                "2019-Datacenter",
+                "2016-Datacenter",
+                "2012-R2-Datacenter",
+                "SQL2017-WS2016",
+                "SQL2016SP1-WS2016",
+                "SQL2014SP2-WS2012R2",
+                "SQL2012SP4-WS2012R2"
+            ]
+        },
+        "SqlImageSku": {
+            "type": "string",
+            "allowedValues": [
+                "Enterprise",
+                "Standard"
+            ]
+        },
+        "DeployDataDisks": {
+            "type": "string",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ]
+        },
+        "DataDiskCount": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 8
+        },
+        "DataDiskSize": {
+            "type": "array",
+            "allowedValues": [
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4096
+            ]
+        },
+        "DataDiskCaching": {
+            "type": "array",
+            "allowedValues": [
+                "None",
+                "ReadOnly",
+                "ReadWrite"
+            ]
+        },
+        "DataDiskStorageType": {
+            "type": "array",
+            "allowedValues": [
+                "Standard_LRS",
+                "StandardSSD_LRS",
+                "Premium_LRS"
+            ]
+        },
+        "TimeZone": {
+            "type": "string"
+        },
+        "EnableAutomaticUpdates": {
+            "type": "bool"
+        },
+        "BootDiagnosticsUri": {
+            "type": "string"
+        },
+        "ApplyDscConfig": {
+            "type": "string",
+            "allowedValues": [
+                "No",
+                "Yes"
+            ]
+        },
+        "DscNodeConfigurationName": {
+            "type": "string"
+        },
+        "DscRegistrationUrl": {
+            "type": "string"
+        },
+        "DscRegistrationKey": {
+            "type": "securestring"
+        },
+        "domainToJoin": {
+            "type": "string",
+            "metadata": {
+                "description": "The FQDN of the AD domain"
+            }
+        },
+        "domainUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username of the account on the domain"
+            }
+        },
+        "ouPath": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies an organizational unit (OU) for the domain account. Enter the full distinguished name of the OU in quotation marks. Example: \"OU=testOU; DC=domain; DC=Domain; DC=com\""
+            }
+        },
+        "domainJoinOptions": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "Set of bit flags that define the join options. Default value of 3 is a combination of NETSETUP_JOIN_DOMAIN (0x00000001) & NETSETUP_ACCT_CREATE (0x00000002) i.e. will join the domain and create the account on the domain. For more information see https://msdn.microsoft.com/en-us/library/aa392154(v=vs.85).aspx"
+            }
+        }
+    },
+    "variables": {
+        "networkApiVersion": "2020-07-01",
+        "vmApiVersion": "2020-06-01",
+        "location": "[resourceGroup().location]",
+        "paddedVmIndex": "[padLeft(parameters('VmIndex'), 3, '0')]",
+        "vmName": "[concat('vm', parameters('Application'), parameters('Region'), first(parameters('Environment')), variables('paddedVmIndex'))]",
+        "availabilitySetName": "[concat('avset-vm', parameters('Application'), parameters('Region'), first(parameters('Environment')), '-001')]",
+        "AdminPassword": "$(AdminPassword)",
+        "domainPassword": "$(domainPassword)",
+        "availabilitySetId": {
+            "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('AvailabilitySetName'))]"
+        },
+        "primaryNic": {
+            "static": {
+                "ipconfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[parameters('VmSubnetResourceIds')[0]]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4",
+                            "privateIPAddress": "[parameters('NicStaticIps')[0]]"
+                        }
+                    }
+                ]
+            },
+            "dynamic": {
+                "ipconfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[parameters('VmSubnetResourceIds')[0]]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ]
+            }
+        },
+        "secondaryNic": {
+            "static": {
+                "ipconfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[parameters('VmSubnetResourceIds')[1]]"
+                            },
+                            "primary": false,
+                            "privateIPAddressVersion": "IPv4",
+                            "privateIPAddress": "[parameters('NicStaticIps')[1]]"
+                        }
+                    }
+                ]
+            },
+            "dynamic": {
+                "ipconfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[parameters('VmSubnetResourceIds')[1]]"
+                            },
+                            "primary": false,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ]
+            }
+        },
+        "nicIds": {
+            "1": {
+                "networkInterfaces": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('nic-', variables('vmName'), '-001'))]"
+                    }
+                ]
+            },
+            "2": {
+                "networkInterfaces": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('nic-', variables('vmName'), '-001'))]",
+                        "properties": {
+                            "primary": true
+                        }
+                    },
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('nic-', variables('vmName'), '-002'))]",
+                        "properties": {
+                            "primary": false
+                        }
+                    }
+                ]
+            }
+        },
+        "bootDiags": {
+            "enabled": {
+                "bootDiagnostics": {
+                    "enabled": true,
+                    "storageUri": "[parameters('BootDiagnosticsUri')]"
+                }
+            },
+            "disabled": {
+                "bootDiagnostics": {
+                    "enabled": false
+                }
+            }
+        },
+        "copy": [
+            {
+                "name": "dataDisks",
+                "count": "[parameters('DataDiskCount')]",
+                "input": {
+                    "diskSizeGB": "[parameters('DataDiskSize')[copyIndex('dataDisks')]]",
+                    "lun": "[copyIndex('dataDisks')]",
+                    "managedDisk": {
+                        "storageAccountType": "[parameters('DataDiskStorageType')[copyIndex('dataDisks')]]"
+                    },
+                    "createOption": "Empty",
+                    "caching": "[parameters('DataDiskCaching')[copyIndex('dataDisks')]]"
+                }
+            }
+        ],
+        "modulesUrl": "https://dafileshares.blob.core.windows.net/updatelcmforazureautomation/Update-LcmForAzureAutomation.zip",
+        "configurationFunction": "Update-LCMforAzureAutomation.ps1\\ConfigureLCMforAzureAutomation",
+        "configurationMode": "ApplyOnly",
+        "configurationModeFrequencyMins": 15,
+        "refreshFrequencyMins": 30,
+        "rebootNodeIfNeeded": true,
+        "actionAfterReboot": "ContinueConfiguration",
+        "allowModuleOverwrite": true
+    },
+    "resources": [
+        {
+            "comments": "Doherty Associates v2.0; Availability Set.",
+            "condition": "[equals(parameters('DeployAvailabilitySet'), 'Yes')]",
+            "apiVersion": "[variables('vmApiVersion')]",
+            "type": "Microsoft.Compute/availabilitySets",
+            "name": "[variables('availabilitySetName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 5
+            },
+            "sku": {
+                "name": "Aligned"
+            }
+        },
+        {
+            "comments": "Doherty Associates v2.0; Primary Network Interface for the VM.",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat('nic-', variables('vmName'), '-001')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "ipConfigurations": "[if(equals(parameters('NicStaticIps')[0], 'NA'), variables('primaryNic')['dynamic'].ipConfigurations, variables('primaryNic')['static'].ipConfigurations)]",
+                "dnsSettings": {
+                    "dnsServers": [],
+                    "appliedDnsServers": []
+                },
+                "enableAcceleratedNetworking": "[parameters('NicAcceleratedNetwork')]",
+                "enableIPForwarding": "[parameters('NicIpForward')]"
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Doherty Associates v2.0; Secondary Network Interface for the VM.",
+            "condition": "[greater(parameters('NicCount'), 1)]",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat('nic-', variables('vmName'), '-002')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "ipConfigurations": "[if(equals(parameters('NicStaticIps')[0], 'NA'), variables('secondaryNic')['dynamic'].ipConfigurations, variables('secondaryNic')['static'].ipConfigurations)]",
+                "dnsSettings": {
+                    "dnsServers": [],
+                    "appliedDnsServers": []
+                },
+                "enableAcceleratedNetworking": "[parameters('NicAcceleratedNetwork')]",
+                "enableIPForwarding": "[parameters('NicIpForward')]"
+            },
+            "dependsOn": []
+        },
+        {
+            "comments": "Doherty Associates v2.0; Virtual Machine.",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[variables('vmName')]",
+            "apiVersion": "[variables('vmApiVersion')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', concat('nic-', variables('vmName'), '-001'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', concat('nic-', variables('vmName'), '-002'))]"
+            ],
+            "properties": {
+                "availabilitySet": "[if(equals(parameters('DeployAvailabilitySet'), 'Yes'), variables('availabilitySetId'), json('null'))]",
+                "hardwareProfile": {
+                    "vmSize": "[parameters('VmSize')]"
+                },
+                "licenseType": "[if(equals(parameters('VmHybridUseBenefit'), 'Yes'), 'Windows_Server', json('null'))]",
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[if(contains(parameters('DeployVmImageType'), 'SQL'), 'MicrosoftSqlServer', 'MicrosoftWindowsServer')]",
+                        "offer": "[if(contains(parameters('DeployVmImageType'), 'SQL'), parameters('DeployVmImageType'), 'WindowsServer')]",
+                        "sku": "[if(contains(parameters('DeployVmImageType'), 'SQL'), parameters('SqlImageSku'), parameters('DeployVmImageType'))]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "diskSizeGB": "[parameters('OsDiskSize')]",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('OsDiskStorageType')]"
+                        }
+                    },
+                    "dataDisks": "[if(equals(parameters('DeployDataDisks'), 'Yes'),variables('dataDisks'), json('null'))]"
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "adminUsername": "[parameters('AdminUserName')]",
+                    "adminPassword": "[variables('AdminPassword')]",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": "[parameters('EnableAutomaticUpdates')]",
+                        "timeZone": "[parameters('TimeZone')]"
+                    },
+                    "secrets": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": "[if(greater(parameters('NicCount'), 1), variables('nicIds')['2'].networkInterfaces, variables('nicIds')['1'].networkInterfaces)]"
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": "[if(empty(parameters('BootDiagnosticsUri')), variables('bootDiags')['disabled'].bootDiagnostics, variables('bootDiags')['enabled'].bootDiagnostics)]"
+                }
+            }
+        },
+        {
+            "comments": "Doherty Associates v1.0; DSC Extension.",
+            "condition": "[equals(parameters('ApplyDscConfig'), 'Yes')]",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('vmName'),'/Microsoft.Powershell.DSC')]",
+            "apiVersion": "[variables('vmApiVersion')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "publisher": "Microsoft.Powershell",
+                "type": "DSC",
+                "typeHandlerVersion": "2.8",
+                "autoUpgradeMinorVersion": true,
+                "protectedSettings": {
+                    "Items": {
+                        "registrationKeyPrivate": "[parameters('DscRegistrationKey')]"
+                    }
+                },
+                "settings": {
+                    "ModulesUrl": "[variables('modulesUrl')]",
+                    "SasToken": "",
+                    "ConfigurationFunction": "[variables('configurationFunction')]",
+                    "Properties": [
+                        {
+                            "Name": "RegistrationKey",
+                            "Value": {
+                                "UserName": "PLACEHOLDER_DONOTUSE",
+                                "Password": "PrivateSettingsRef:registrationKeyPrivate"
+                            },
+                            "TypeName": "System.Management.Automation.PSCredential"
+                        },
+                        {
+                            "Name": "RegistrationUrl",
+                            "Value": "[parameters('DscRegistrationUrl')]",
+                            "TypeName": "System.String"
+                        },
+                        {
+                            "Name": "NodeConfigurationName",
+                            "Value": "[concat(parameters('DscNodeConfigurationName'),'.', variables('vmName'))]",
+                            "TypeName": "System.String"
+                        },
+                        {
+                            "Name": "ConfigurationMode",
+                            "Value": "[variables('configurationMode')]",
+                            "TypeName": "System.String"
+                        },
+                        {
+                            "Name": "ConfigurationModeFrequencyMins",
+                            "Value": "[variables('configurationModeFrequencyMins')]",
+                            "TypeName": "System.Int32"
+                        },
+                        {
+                            "Name": "RefreshFrequencyMins",
+                            "Value": "[variables('refreshFrequencyMins')]",
+                            "TypeName": "System.Int32"
+                        },
+                        {
+                            "Name": "RebootNodeIfNeeded",
+                            "Value": "[variables('rebootNodeIfNeeded')]",
+                            "TypeName": "System.Boolean"
+                        },
+                        {
+                            "Name": "ActionAfterReboot",
+                            "Value": "[variables('actionAfterReboot')]",
+                            "TypeName": "System.String"
+                        },
+                        {
+                            "Name": "AllowModuleOverwrite",
+                            "Value": "[variables('allowModuleOverwrite')]",
+                            "TypeName": "System.Boolean"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
+            ]
+        },
+        {
+
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('vmName'),'/joindomain')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "JsonADDomainExtension",
+                "typeHandlerVersion": "1.3",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "Name": "[parameters('domainToJoin')]",
+                    "OUPath": "[parameters('ouPath')]",
+                    "User": "[concat(parameters('domainToJoin'), '\\', parameters('domainUsername'))]",
+                    "Restart": "true",
+                    "Options": "[parameters('domainJoinOptions')]"
+                },
+                "protectedSettings": {
+                    "Password": "[variables('domainPassword')]"
+                }
+            }
+        }
+    ]
+}
