@@ -29,7 +29,7 @@
     },
     "NicStaticIps": {
       "value": [
-        "172.31.0.5",
+        "172.31.0.6",
         "NA"
       ]
     },
@@ -89,7 +89,7 @@
       "value": true
     },
     "BootDiagnosticsUri": {
-      "value": "https://amdiagnosticsneub7ea9323.blob.core.windows.net/"
+      "value": "https://testrgdiag986.blob.core.windows.net/"
     },
     "ApplyDscConfig": {
       "value": "No"
@@ -104,7 +104,7 @@
       "value": "PLACEHOLDER_REG_KEY"
     },
     "domainToJoin": {
-      "value": "mardix.local"
+      "value": "home.local"
     },
     "domainUsername": {
       "value": "domainjoin"
