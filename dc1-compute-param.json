@@ -1,0 +1,119 @@
+
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "Application": {
+        "value": "dc"
+      },
+      "Environment": {
+        "value": "prod"
+      },
+      "Region": {
+        "value": "neu"
+      },
+      "VmIndex": {
+        "value": 1
+      },
+      "VmHybridUseBenefit": {
+        "value": "Yes"
+      },
+      "NicCount": {
+        "value": 1
+      },
+      "NicAcceleratedNetwork": {
+        "value": false
+      },
+      "NicIpForward": {
+        "value": false
+      },
+      "NicStaticIps": {
+        "value": [
+          "172.31.0.4",
+          "NA"
+        ]
+      },
+      "VmSubnetResourceIds": {
+        "value": [
+          "/subscriptions/c92d46bf-157d-4970-ab75-0c112a7f44ac/resourceGroups/rg-network-prod-001/providers/Microsoft.Network/virtualNetworks/vnet-prod-neu-001/subnets/snet-prod-neu-001",
+          "NA"
+        ]
+      },
+      "DeployAvailabilitySet": {
+        "value": "Yes"
+      },
+      "VmSize": {
+        "value": "Standard_B2ms"
+      },
+      "OsDiskStorageType": {
+        "value": "Premium_LRS"
+      },
+      "OsDiskSize": {
+        "value": 128
+      },
+      "AdminUserName": {
+        "value": "ditadmin"
+      },
+      "DeployVmImageType": {
+        "value": "2019-Datacenter"
+      },
+      "SqlImageSku": {
+        "value": "Standard"
+      },
+      "DeployDataDisks": {
+        "value": "Yes"
+      },
+      "DataDiskCount": {
+        "value": 1
+      },
+      "DataDiskSize": {
+        "value": [
+          32
+        ]
+      },
+      "DataDiskCaching": {
+        "value": [
+          "None",
+          "ReadOnly"
+        ]
+      },
+      "DataDiskStorageType": {
+        "value": [
+          "Premium_LRS"
+        ]
+      },
+      "TimeZone": {
+        "value": "GMT Standard Time"
+      },
+      "EnableAutomaticUpdates": {
+        "value": true
+      },
+      "BootDiagnosticsUri": {
+        "value": "https://amdiagnosticsneub7ea9323.blob.core.windows.net/"
+      },
+      "ApplyDscConfig": {
+        "value": "No"
+      },
+      "DscNodeConfigurationName": {
+        "value": "AzureServer"
+      },
+      "DscRegistrationUrl": {
+        "value": "https://we-agentservice-prod-1.azure-automation.net/accounts/9d374b82-9f65-49df-abc8-12248b9da45a"
+      },
+      "DscRegistrationKey": {
+        "value": "PLACEHOLDER_REG_KEY"
+      },
+      "domainToJoin": {
+        "value": "mardix.local"
+      },
+      "domainUsername": {
+        "value": "domainjoin"
+      },
+      "ouPath": {
+        "value": "CN=Computers,DC=Mardix,DC=local"
+      },
+      "domainJoinOptions": {
+        "value": 3
+      }
+    }
+}
